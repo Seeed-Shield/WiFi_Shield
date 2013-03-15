@@ -13,6 +13,9 @@ void setup() {
   Serial.begin(9600);
   Serial.println("TEST WIFLY");
   
+  // wait for initilization of wifly
+  delay(3000);
+  
   wifly.sendCommand("factory RESET\r", "Factory");
   wifly.init();
   
@@ -25,14 +28,13 @@ void setup() {
   
   // get WiFly params
   wifly.sendCommand("get everthing\r");
-  int c;
-  while ((c = wifly.timedRead(300)) >= 0) {
+  char c;
+  while (wifly.receive(&c, 1, 300) > 0) {
     Serial.print((char)c);
   }
   
-//  wifly.dataMode();
   if (wifly.commandMode()) {
-    Serial.println("Enter command mode.");
+    Serial.println("Enter command mode. Send \"$$$\"(with \\r) to exit command mode");
   }
 }
 
