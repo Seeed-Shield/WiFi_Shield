@@ -23,6 +23,10 @@ class WiFly : public SoftwareSerial
 {
   public:
     WiFly(uint8_t rx, uint8_t tx);
+	
+	static WiFly* getInstance() {
+	   return instance;
+	}
     
     boolean setDefaultSettings();
     
@@ -44,6 +48,7 @@ class WiFly : public SoftwareSerial
  //   int write(const uint8_t *buf, int len);
     
   private:
+    WiFly*  instance;
     boolean command_mode;
     boolean associated;
     uint8_t dhcp;

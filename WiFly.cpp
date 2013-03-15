@@ -4,6 +4,8 @@
 
 WiFly::WiFly(uint8_t rx, uint8_t tx) : SoftwareSerial(rx, tx)
 {
+  instance = this;
+  
   SoftwareSerial::begin(DEFAULT_BAUDRATE);
   setTimeout(DEFAULT_WAIT_RESPONSE_TIME);
   
