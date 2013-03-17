@@ -15,9 +15,21 @@ WiFly::WiFly(uint8_t rx, uint8_t tx) : SoftwareSerial(rx, tx)
   associated = false;
 }
 
+boolean WiFly::reset()
+{
+  return sendCommand("factory R\r", "Defaults");
+}
+
+boolean WiFly::reboot()
+{
+  return sendCommand("reboot\r");
+}
+
 boolean WiFly::init()
 {
   boolean result = true;
+  
+#if 0
   // set time
   result = result & sendCommand("set c t 20\r", "AOK");
   
@@ -42,7 +54,8 @@ boolean WiFly::init()
   
   // DHCP on
   result = result & sendCommand("set i d 1\r", "AOK");
-  
+#endif
+
   return result;
 }
 
@@ -67,40 +80,36 @@ boolean WiFly::staticIP(const char *ip, const char *mask, const char *gateway)
 
 boolean WiFly::join(const char *ssid, const char *phrase, int auth)
 {
-    char cmd[MAX_CMD_LEN];
+  char cmd[MAX_CMD_LEN];
 
-    for (int i= 0; i < MAX_TRY_JOIN; i++) {
-        // ssid
-        snprintf(cmd, MAX_CMD_LEN, "set w s %s\r", ssid);
-        if (!sendCommand(cmd, "AOK"))
-            continue;
+  // ssid
+  snprintf(cmd, MAX_CMD_LEN, "set w s %s\r", ssid);
+  sendCommand(cmd, "AOK");
 
-        //auth
-        snprintf(cmd, MAX_CMD_LEN, "set w a %d\r", auth);
-        if (!sendCommand(cmd, "AOK"))
-            continue;
+  //auth
+  snprintf(cmd, MAX_CMD_LEN, "set w a %d\r", auth);
+  sendCommand(cmd, "AOK");
 
-        //key
-        if (auth != WIFLY_AUTH_OPEN) {
-            if (auth == WIFLY_AUTH_WEP)
-              snprintf(cmd, MAX_CMD_LEN, "set w k %s\r", phrase);
-            else
-              snprintf(cmd, MAX_CMD_LEN, "set w p %s\r", phrase);
+  //key
+  if (auth != WIFLY_AUTH_OPEN) {
+      if (auth == WIFLY_AUTH_WEP)
+        snprintf(cmd, MAX_CMD_LEN, "set w k %s\r", phrase);
+      else
+        snprintf(cmd, MAX_CMD_LEN, "set w p %s\r", phrase);
 
-            if (!sendCommand(cmd, "AOK"))
-                continue;
-        }
+      sendCommand(cmd, "AOK");
+  }
+  
 
-        //join the network
-        if (!sendCommand("join\r", "Associated", 1000))
-            continue;
+  //join the network
+  if (!sendCommand("join\r", "ssociated")) {
+      return false;
+  }
 
-        dataMode();
+  clear();
 
-        associated = true;
-        return true;
-    }
-    return false;
+  associated = true;
+  return true;
 }
 
 boolean WiFly::leave()
@@ -112,22 +121,24 @@ boolean WiFly::leave()
   return false;
 }
 
-boolean WiFly::connect(const char *host, uint16_t port)
+boolean WiFly::connect(const char *host, uint16_t port, int timeout)
 {
-  char cmd[32];
+  char cmd[MAX_CMD_LEN];
   snprintf(cmd, sizeof(cmd), "set d n %s\r", host);
   sendCommand(cmd, "AOK");
   snprintf(cmd, sizeof(cmd), "set i r %d\r", port);
   sendCommand(cmd, "AOK");
   sendCommand("set i p 18\r", "AOK");
-  sendCommand("set i a 0\r", "AOK");
+  sendCommand("set i h 0\r", "AOK");
   sendCommand("set c r 0\r", "AOK");
-  return sendCommand("open\r", "*OPEN*", 10000);
-}
+  if (!sendCommand("open\r", "*OPEN*", timeout)) {
+    sendCommand("close\r");
+    clear();
+    return false;
+  }
 
-int WiFly::send(const char *str, int timeout)
-{
-  send((uint8_t *)str, strlen(str), timeout);
+  command_mode = false;
+  return true;
 }
 
 int WiFly::send(const uint8_t *data, int len, int timeout)
@@ -137,7 +148,7 @@ int WiFly::send(const uint8_t *data, int len, int timeout)
   unsigned long start_millis;
   
   while (write_bytes < len) {
-    if (write(data[write_bytes])) {
+    if (write(data[write_bytes]) == 1) {
       write_bytes++;
       write_error = false;
     } else {         // failed to write, set timeout
@@ -158,14 +169,33 @@ int WiFly::send(const uint8_t *data, int len, int timeout)
 
 boolean WiFly::ask(const char *q, const char *a, int timeout)
 {
+  unsigned long start;
+  unsigned long end;
   int q_len = strlen(q);
-  if (send((uint8_t *)q, q_len, timeout) != q_len) {
-    return false;
-  }
+  send((uint8_t *)q, q_len, timeout); 
   
   if (a != NULL) {
-    setTimeout(DEFAULT_WAIT_RESPONSE_TIME);
-    return find((char *)a);
+    setTimeout(timeout);
+    start = millis();
+    boolean found = find((char *)a);
+    if (!found) {
+      end = millis();
+      if ((end - start) < timeout) {
+        DBG("\r\n");
+        DBG(q);
+        DBG("\r\nTry to find: ");
+        DBG(a);
+        DBG("\r\nTimeout: ");
+        DBG(timeout);
+        DBG("\r\nStart time: ");
+        DBG(start);
+        DBG("\r\nEnd time: ");
+        DBG(end);
+        DBG("\r\n***** Probably ot enough memory *****\r\n");
+      }
+      
+      return false;
+    }
   }
   
   return true;
@@ -179,15 +209,12 @@ boolean WiFly::sendCommand(const char *cmd, const char *ack, int timeout)
     commandMode();
   }
   
-  DBG(">");
-  DBG(cmd);
-  
   if (!ask(cmd, ack, timeout)) {
-    DBG("\r\nFailed\r\n");
+    DBG("Failed to run: ");
+    DBG(cmd);
+    DBG("\r\n");
     return false;
   }
-  
-  DBG("\r\nOK\r\n");
   return true;
 }
   
@@ -196,14 +223,12 @@ boolean WiFly::commandMode()
   if (command_mode)
     return true;
   
-  DBG("Enter command mode: ");
-  if (!ask("$$$", "CMD", 600)) {
+  if (!ask("$$$", "CMD")) {
     if (!ask("\r", "ERR")) {
-      DBG("Failed\r\n");
+      DBG("Failed to enter command mode\r\n");
       return false;
     }
   }
-  DBG("OK\r\n");
   command_mode = true;
   return true;
 }
@@ -211,16 +236,13 @@ boolean WiFly::commandMode()
 boolean WiFly::dataMode()
 {
   if (command_mode) {
-    DBG("Enter data mode: ");
     if (!ask("exit\r", "EXIT")) {
       if (ask("\r", "ERR")) {
-        DBG("Failed\r\n");
+        DBG("Failed to enter data mode\r\n");
         return false;
       }
     }
     command_mode = false;
-    
-    DBG("OK\r\n");
   }
   return true;
 }
@@ -228,9 +250,34 @@ boolean WiFly::dataMode()
 void WiFly::clear()
 {
   char r;
-  while (receive((uint8_t *)&r, 1, 100) == 1) {
+  while (receive((uint8_t *)&r, 1, 10) == 1) {
   }
 }
+
+float WiFly::version()
+{
+    if (!sendCommand("ver\r", "Ver ")) {
+        return -1;
+    }
+
+    char buf[48];
+    int read_bytes;
+    read_bytes = receive((uint8_t *)buf, 48 -1);
+    buf[read_bytes] = '\0';
+
+    float version;
+    version = atof(buf);
+    if (version == 0) {
+        char *ptr = strchr(buf, '<');
+        if (ptr != NULL) {
+            version = atof(ptr + 1);
+        }
+    }
+    
+    return version;
+}
+
+
 
 int WiFly::receive(uint8_t *buf, int len, int timeout)
 {
@@ -241,7 +288,7 @@ int WiFly::receive(uint8_t *buf, int len, int timeout)
   while (read_bytes < len) {
     end_millis = millis() + timeout;
     do {
-      ret = SoftwareSerial::read();
+      ret = read();
       if (ret >= 0) {
         break;
      }
@@ -253,4 +300,6 @@ int WiFly::receive(uint8_t *buf, int len, int timeout)
     buf[read_bytes] = (char)ret;
     read_bytes++;
   }
+  
+  return read_bytes;
 }

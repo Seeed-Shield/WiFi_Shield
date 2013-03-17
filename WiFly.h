@@ -5,7 +5,7 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
 
-#define DEFAULT_WAIT_RESPONSE_TIME      600        // 600ms
+#define DEFAULT_WAIT_RESPONSE_TIME      1000        // 1000ms
 #define DEFAULT_BAUDRATE                9600
 #define MAX_CMD_LEN                     32
 #define MAX_TRY_JOIN                    3
@@ -29,14 +29,16 @@ class WiFly : public SoftwareSerial
 	}
     
     boolean init();
-    boolean staticIP(const char *ip, const char *mask, const char *gateway);
+    boolean reset();
+    boolean reboot();
     
     boolean join(const char *ssid, const char *phrase = NULL, int auth = WIFLY_AUTH_OPEN);
     boolean leave();
     
-    boolean connect(const char *host, uint16_t port);
+    boolean connect(const char *host, uint16_t port, int timeout = DEFAULT_WAIT_RESPONSE_TIME);
+
+    boolean staticIP(const char *ip, const char *mask, const char *gateway);
     
-    int send(const char *str, int timeout = DEFAULT_WAIT_RESPONSE_TIME);
     int send(const uint8_t *data, int len, int timeout = DEFAULT_WAIT_RESPONSE_TIME);
     int receive(uint8_t *buf, int len, int timeout = DEFAULT_WAIT_RESPONSE_TIME);
     
@@ -47,6 +49,8 @@ class WiFly : public SoftwareSerial
     boolean dataMode();
     
     void clear();
+
+    float version();
     
   private:
     static WiFly*  instance;
