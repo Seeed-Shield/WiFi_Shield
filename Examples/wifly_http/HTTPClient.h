@@ -12,12 +12,12 @@ class HTTPClient {
   public:
     HTTPClient();
     
-    int get(const char *url, char *response, int len, int timeout = HTTP_CLIENT_DEFAULT_TIMEOUT);
-    int post(const char *url, const char *data, char *respose, int len, int timeout = HTTP_CLIENT_DEFAULT_TIMEOUT);
+    int get(const char *url, int timeout = HTTP_CLIENT_DEFAULT_TIMEOUT);
+    int post(const char *url, const char *data, int timeout = HTTP_CLIENT_DEFAULT_TIMEOUT);
     
-//  private:
-    int parseURL(const char *url, char *scheme, int max_scheme_len, char *host, int max_host_len, uint16_t *port, char *path, int max_path_len);
+  private:
     int parseURL(const char *url, char *host, int max_host_len, uint16_t *port, char *path, int max_path_len);
+    int connect(const char *url, const char *method, const char *data, int timeout = HTTP_CLIENT_DEFAULT_TIMEOUT);
  
     WiFly* wifly;
 };
