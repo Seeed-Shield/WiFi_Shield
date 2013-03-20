@@ -10,27 +10,38 @@ HTTPClient::HTTPClient()
 
 int HTTPClient::get(const char *url, int timeout)
 {
-  return connect(url, "GET", NULL, timeout);
+  return connect(url, "GET", NULL, NULL, timeout);
+}
+
+int HTTPClient::get(const char *url, const char *headers, int timeout)
+{
+  return connect(url, "GET", headers, NULL, timeout);
 }
 
 int HTTPClient::post(const char *url, const char *data, int timeout)
 {
-  return connect(url, "POST", data, timeout);
+  return connect(url, "POST", NULL, data, timeout);
+}
+
+int HTTPClient::post(const char *url, const char *headers, const char *data, int timeout)
+{
+  return connect(url, "POST", headers, data, timeout);
 }
 
 int HTTPClient::connect(const char *url, const char *method, const char *data, int timeout)
 {
-  char host[20];
+  return connect(url, method, NULL, data, timeout);
+}
+
+int HTTPClient::connect(const char *url, const char *method, const char *headers, const char *data, int timeout)
+{
+  char host[HTTP_MAX_HOST_LEN];
   uint16_t port;
-  char path[40];
+  char path[HTTP_MAX_PATH_LEN];
   
   if (parseURL(url, host, sizeof(host), &port, path, sizeof(path)) != 0) {
     DBG("Failed to parse URL.\r\n");
     return -1;
-  }
-  
-  if (port == 0) {
-    port = 80;
   }
   
   if (!wifly->connect(host, port, timeout)) {
@@ -39,25 +50,29 @@ int HTTPClient::connect(const char *url, const char *method, const char *data, i
   }
   
   // Send request
-  char buf[100];
-  snprintf(buf, sizeof(buf), "%s %s HTTP/1.1\r\nHost: %s\r\n", method, path, host);
-  wifly->send((uint8_t *)buf, strlen(buf));
-  
-  if (data != NULL) {
-    snprintf(buf, sizeof(buf), "Content-Length: %d\r\n", strlen(data));
-    wifly->send((uint8_t *)buf, strlen(buf));
-  }
+  char buf[HTTP_MAX_BUF_LEN];
+  snprintf(buf, sizeof(buf), "%s %s HTTP/1.1\r\n", method, path);
+  wifly->send(buf);
   
   // Send all headers
-  wifly->send((uint8_t *)"Connection: close\r\n", strlen("Connection: close\r\n"));
+  snprintf(buf, sizeof(buf), "Host: %s\r\nConnection: close\r\n", host);
+  wifly->send(buf);
+  
+  if (data != NULL) {
+    snprintf(buf, sizeof(buf), "Content-Length: %d\r\nContent-Type: text/plain\r\n", strlen(data));
+    wifly->send(buf);
+  }
+  
+  if (headers != NULL) {
+    wifly->send(headers);
+  }
   
   // Close headers
-  wifly->send((uint8_t *)"\r\n", 2);
-  
+  wifly->send("\r\n");
   
   // Send body
   if (data != NULL) {
-    wifly->send((uint8_t *)data, strlen(data));
+    wifly->send(data);
   }
   
   return 0;
@@ -87,7 +102,7 @@ int HTTPClient::parseURL(const char *url, char *host, int max_host_len, uint16_t
       return -3;
     }
   } else {
-    *port = 80;
+    *port = HTTP_DEFAULT_PORT;
   }
   
   char *path_ptr = strchr(host_ptr, '/');

@@ -5,12 +5,11 @@
 #include <WiFly.h>
 #include "HTTPClient.h"
 
-#define SSID      "Seed"
-#define KEY       "link2world"
+#define SSID      "YourSSID"
+#define KEY       "passphrase"
 #define AUTH      WIFLY_AUTH_WPA2_PSK
 
-//#define HTTP_GET_URL "http://httpbin.org/get?hello=world"
-#define HTTP_GET_URL "http://baidu.com/"
+#define HTTP_GET_URL "http://httpbin.org/get?hello=world"
 #define HTTP_POST_URL "http://httpbin.org/post"
 #define HTTP_POST_DATA "Hello world!"
 
@@ -20,6 +19,7 @@
 //  3    <---->    RX
 WiFly wifly(2, 3);
 HTTPClient http;
+char get;
 
 void setup() {
   Serial.begin(9600);
@@ -28,7 +28,7 @@ void setup() {
   // Wait WiFly to init
 //  delay(3000);
   
-//  wifly.reset();
+  wifly.reset();
 
   while (1) {
     Serial.println("Try to join " SSID );
@@ -42,28 +42,26 @@ void setup() {
       delay(1000);
     }
   }
-  
-   while (http.get(HTTP_GET_URL, 10000) < 0) {
-     delay(1000);
-   }
+
+  Serial.println("\r\nTry to get url - " HTTP_GET_URL);
+  Serial.println("------------------------------");
+  while (http.get(HTTP_GET_URL, 10000) < 0) {
+  }
+  while (wifly.receive((uint8_t *)&get, 1, 1000) == 1) {
+    Serial.print(get);
+  }
+
+  Serial.println("\r\n\r\nTry to post data to url - " HTTP_POST_URL);
+  Serial.println("-------------------------------");
+  while (http.post(HTTP_POST_URL, HTTP_POST_DATA, 10000) < 0) {
+  }
+  while (wifly.receive((uint8_t *)&get, 1, 1000) == 1) {
+    Serial.print(get);
+  }
    
-   char get;
-   
-   while (wifly.receive((uint8_t *)&get, 1, 1000) == 1) {
-     Serial.print(get);
-   }
-   
-   while (http.post(HTTP_POST_URL, HTTP_POST_DATA, 10000) < 0) {
-     delay(1000);
-   }
-   
-   while (wifly.receive((uint8_t *)&get, 1, 1000) == 1) {
-     Serial.print(get);
-   }
-   
-   if (wifly.commandMode()) {
-    Serial.println("\r\nEnter command mode. Send \"exit\"(with \\r) to exit command mode");
-   }
+  if (wifly.commandMode()) {
+    Serial.println("\r\n\r\nEnter command mode. Send \"exit\"(with \\r) to exit command mode");
+  }
 }
 
 
