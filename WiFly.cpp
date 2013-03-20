@@ -128,7 +128,7 @@ boolean WiFly::connect(const char *host, uint16_t port, int timeout)
   sendCommand(cmd, "AOK");
   snprintf(cmd, sizeof(cmd), "set i r %d\r", port);
   sendCommand(cmd, "AOK");
-  sendCommand("set i p 18\r", "AOK");
+  sendCommand("set i p 2\r", "AOK");
   sendCommand("set i h 0\r", "AOK");
   sendCommand("set c r 0\r", "AOK");
   if (!sendCommand("open\r", "*OPEN*", timeout)) {
@@ -147,6 +147,9 @@ int WiFly::send(const uint8_t *data, int len, int timeout)
   boolean write_error = false;
   unsigned long start_millis;
   
+  if (data == NULL) {
+    return 0;
+  }
   while (write_bytes < len) {
     if (write(data[write_bytes]) == 1) {
       write_bytes++;
@@ -165,6 +168,11 @@ int WiFly::send(const uint8_t *data, int len, int timeout)
   }
   
   return write_bytes;
+}
+
+int WiFly::send(const char *data, int timeout)
+{
+  send((uint8_t*)data, strlen(data), timeout);
 }
 
 boolean WiFly::ask(const char *q, const char *a, int timeout)

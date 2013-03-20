@@ -39,6 +39,7 @@ class WiFly : public SoftwareSerial
 
     boolean staticIP(const char *ip, const char *mask, const char *gateway);
     
+    int send(const char *data, int timeout = DEFAULT_WAIT_RESPONSE_TIME);
     int send(const uint8_t *data, int len, int timeout = DEFAULT_WAIT_RESPONSE_TIME);
     int receive(uint8_t *buf, int len, int timeout = DEFAULT_WAIT_RESPONSE_TIME);
     
