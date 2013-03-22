@@ -3,8 +3,12 @@
 #include <SoftwareSerial.h>
 #include "WiFly.h"
 
-#define SSID      "Seeed"
+#define SSID      "AP-SSID"
 
+// Pins' connection
+// Arduino       WiFly
+//  2    <---->    TX
+//  3    <---->    RX
 WiFly wifly(2, 3);
 
 void setup() {

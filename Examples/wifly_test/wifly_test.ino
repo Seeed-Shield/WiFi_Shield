@@ -3,10 +3,14 @@
 #include <SoftwareSerial.h>
 #include "WiFly.h"
 
-#define SSID      "Seed"
-#define KEY       "link2world"
+#define SSID      "Your-SSID"
+#define KEY       "passphrase"
 #define AUTH      WIFLY_AUTH_WPA2_PSK
 
+// Pins' connection
+// Arduino       WiFly
+//  2    <---->    TX
+//  3    <---->    RX
 WiFly wifly(2, 3);
 
 void setup() {

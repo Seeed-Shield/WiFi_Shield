@@ -5,8 +5,9 @@
 #include <WiFly.h>
 #include "HTTPClient.h"
 
-#define SSID      "YourSSID"
+#define SSID      "Your-SSID"
 #define KEY       "passphrase"
+// WIFLY_AUTH_OPEN / WIFLY_AUTH_WPA1 / WIFLY_AUTH_WPA1_2 / WIFLY_AUTH_WPA2_PSK
 #define AUTH      WIFLY_AUTH_WPA2_PSK
 
 #define HTTP_GET_URL "http://httpbin.org/get?hello=world"

@@ -3,8 +3,9 @@
 #include <SoftwareSerial.h>
 #include "WiFly.h"
 
-#define SSID      "Seed"
-#define KEY       "link2world"
+#define SSID      "Your-SSID"
+#define KEY       "passphrase"
+// WIFLY_AUTH_OPEN / WIFLY_AUTH_WPA1 / WIFLY_AUTH_WPA1_2 / WIFLY_AUTH_WPA2_PSK
 #define AUTH      WIFLY_AUTH_WPA2_PSK
 
 // Pins' connection
