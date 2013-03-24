@@ -1,4 +1,3 @@
-
 #include <Arduino.h>
 #include <SoftwareSerial.h>
 #include "WiFly.h"
@@ -52,8 +51,9 @@ void setup() {
     }
   }
   
-  Serial.println("ftp server: rn.microchip.com(198.175.253.161)");
-  wifly.sendCommand("set ftp address 198.175.253.161\r");
+  Serial.println("ftp server: rn.microchip.com");
+  wifly.sendCommand("set dns name rn.microchip.com\r");
+  wifly.sendCommand("set ftp address 0\r");
   Serial.println("firmware: wifly-EZX.img or wifly-EZX-AP.img");
   wifly.sendCommand("set ftp filename wifly-EZX-AP.img\r");
   Serial.println("Try to update");
