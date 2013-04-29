@@ -3,7 +3,7 @@
 #define __WIFLY_H__
 
 #include <Arduino.h>
-#include <SoftwareSerial.h>
+#include <Stream.h>
 
 #define DEFAULT_WAIT_RESPONSE_TIME      1000        // 1000ms
 #define DEFAULT_BAUDRATE                9600
@@ -19,10 +19,17 @@
 #define WIFLY_AUTH_WPA2_PSK    4    // WPA2-PSK
 #define WIFLY_AUTH_ADHOC       6    // Ad-hoc, join any Ad-hoc network
 
-class WiFly : public SoftwareSerial
+class WiFly : public Stream
 {
   public:
-    WiFly(uint8_t rx, uint8_t tx);
+    WiFly(Stream *);
+
+    size_t write(uint8_t);
+    size_t write(const uint8_t *, size_t);
+    int available();
+    int read();
+    int peek();
+    void flush();
 	
 	static WiFly* getInstance() {
 	   return instance;
@@ -55,6 +62,8 @@ class WiFly : public SoftwareSerial
     
   private:
     static WiFly*  instance;
+
+    Stream* serial;
 	
     boolean command_mode;
     boolean associated;

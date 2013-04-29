@@ -4,15 +4,45 @@
 
 WiFly* WiFly::instance;
 
-WiFly::WiFly(uint8_t rx, uint8_t tx) : SoftwareSerial(rx, tx)
+WiFly::WiFly(Stream *serial)
 {
   instance = this;
+  this->serial = serial;
   
-  SoftwareSerial::begin(DEFAULT_BAUDRATE);
   setTimeout(DEFAULT_WAIT_RESPONSE_TIME);
   
   command_mode = false;
   associated = false;
+}
+
+int WiFly::available()
+{
+    return serial->available();
+}
+
+int WiFly::read()
+{
+    return serial->read();
+}
+
+int WiFly::peek()
+{
+    return serial->peek();
+}
+
+void WiFly::flush()
+{
+    return serial->flush();
+}
+
+size_t WiFly::write(uint8_t c)
+{
+    return serial->write(c);
+}
+
+size_t WiFly::write(const uint8_t *buffer, size_t size)
+{
+    return serial->write(buffer, size);
 }
 
 boolean WiFly::reset()
