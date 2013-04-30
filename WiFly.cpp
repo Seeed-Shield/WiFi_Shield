@@ -52,7 +52,9 @@ boolean WiFly::reset()
 
 boolean WiFly::reboot()
 {
-  return sendCommand("reboot\r");
+  sendCommand("reboot\r");
+  command_mode = false;
+  return true;
 }
 
 boolean WiFly::init()
